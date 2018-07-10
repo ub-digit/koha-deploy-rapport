@@ -12,7 +12,8 @@ Man kan grovt dela in funktionaliteten i följande områden:
 
 - Automatisering av arbetsflöde i Git
 - Deploy
-- Hantering av Koha-inställningar (som ligger i databas)
+- Deploy av plugins
+- Hantering av Koha-inställningar (i databas)
 - Serverkonfiguration
 
 # Arbetsflöde i Git
@@ -205,3 +206,122 @@ För att deploya körs sedan:
 `cap lab deploy`
 
 När kommandot kört klart har aktuell release deployats till lab-servern.
+
+## Versioneringsstrategi
+
+Vi använder oss av en lite okonventionell versionering, som tidigare nämnt ser ett releasenamn ut på följande vis:
+
+`release-YYYY.MM-YYYYMMDD.HHMM`
+
+Där första delen är ett godtyckligt prefix, i vårt fall "release", `YYYY.MM` är år och månad för den commit i master som releasen utgår från, och `YYYYMMDD.HHMM` är det datum som våra lokala feature-branches (via rebase) integrerades i release branchen.
+
+Varje ny release som innebär en framflyttning av master (vilken resulterar i nytt `YYYY.MM`) innehålla betydligt fler nya commits än om vi bygger en ny release från befintling utgångspunkt (som endast involverar ändringar i lokala feature-branches). Därför betraktar vi den första typen av release som en slags "major" release, medan ett branchbygge utan framflyttning av master mer är att betrakta som en minor/patch-version.
+
+Det finns in inställning som vi hittils underlåtigt att nämna som används just för att sätta nytt prefix vid ny "major" release.
+
+`set :koha_deploy_release_branch_prefix, 'release-2018.05-'`
+
+Det finns ingen magi vad gäller datumet, utan det är i vårt fall endast en konvension och sätts manuellt. Varje gång master flyttas fram och feature-branches har rebasats mot den nya mastern behöver man manuellt sätta nytt prefix.
+
+Det finns dock ett problem som uppstår i vakuumet mellan att man påbörjar arbetet med att bygga en ny stabil release på framflyttad master, och behovet kvarstår att kunna bygga releaser baserade på den tidigare startpunkten i master vilket kan illustreras med ett exempel:
+
+Säg att vi har flyttat fram våran master så den ny inte har samma HEAD som då de tidigare releaserna byggdes, vi har även rebasat alla feature-branches så de nu utgår från den senaste committen i den framflyttade mastern. Om vi nu använder Koha-deploy för att bygga en ny release-branch med `cap lab koha:build`, så kommer denna använda startpuntken "master" (om inget annat angetts), samt de nyligen rebasade feature-brancherna. Vad vi nu har gjort är att bygga den nya, för närvaradande otestade och instabila, major releasen. Men säg att vi upptäcker ny bugg problem i produktionsmiljön som akut måste åtgärdas. Vi kan inte åtgärda buggen i aktuell feature-branch, bygga, och deploya då vi då har deployat den nya otestade versionen. Vi vill bygga mot den gamla startpunkten, och med de gamla feature-brancharna så som de såg ut innan rebase.
+
+Vi löser detta genom att innan varje ny major-release arkivera branchen som används som startpunkt, samt alla feature-branches, och spara dessa med det gamla branch namnet som prefix. Att göra detta manuellt är opraktiskt, men som tur är har Koha-deploy funktionallitet för automatisering av denna procedur:
+
+Checka ut alla feature-branches lokalt med release-branch-namn som prefix:
+
+`cap lab branches:checkout[release-2018.07-]`
+
+Pusha branches med detta prefix (de som precis skapats) till remote repo:
+
+`cap lab branches:push[release-2018.07-]`
+
+Skapa också en branch som pekar på den tidigare releasens med samma prefix:
+
+`git branch release-2018.07-master <startpunkt>`
+
+eller om detta sker innan master flytts fram:
+
+`git branch release-2018.07-master master`
+
+och pusha:
+
+```
+git checkout release-2018.07-master
+git push origin
+```
+Nu kan vi bygga den "gamla" releasen, utifrån prefixad arkiverad startpunkt och prefixade feature-branches. Sätt sedan följande inställningar i "config/deploy/production.rb":
+
+```
+release_prefix = 'release-2018.07-'
+set :koha_deploy_branches_prefix, release_prefix
+set :koha_deploy_release_branch_prefix, release_prefix
+set :koha_deploy_release_branch_start_point, release_prefix + 'master'
+```
+För att bygga:
+
+`cap production koha:build`
+
+Notera att vi bygger mot stage "production" istället för lab, vilket resulterar i att inställningna i "config/deploy/production.rb" används istället för "config/deploy/lab.rb". De inställningar som definieras i en stage-specifik konfigurationsfil skriver över de återfinns i "config/deploy.rb".
+
+Med denna setup kan vi sedan backporta kritiska buggfixar i de prefixade feature-brancharna, och bygga nya versioner av den gamla major releasen, samtidigt arbetet kan fortsätta att ta fram en ny stabil major-release.
+
+## Övrig funktionallitet
+
+### Hantering av Koha-inställningar (i databas)
+
+Mycket av Kohas funktionalitet beror inte endast på programkoden, utan konfiguration sparad databasen. Dessa inställningar ändrar Kohas beteende på precis samma sätt som kodförändringar gör, och bör därför betraktas som en del av det tillstånd man vill kunna deploya. Det behövs därför en mekanism för att omvandla inställningar i databaser till ett format som kan versionshanteras, eller i alla användas för att synkronisering av databastillstånd mellan olika Kohainstanser. Man måste skilja på data (tex. marc-poster) och inställningar (tex. system-preferences), vill man flytta inställnigar mellan instanser måste man kunna göra detta utan att skriva över övrig data. Vi använder ett ruby-program (https://github.com/ub-digit/extract-koha-config, tanken är att så småningom integrera detta i Koha-deploy) för att extrahera inställningar utifrån ett strukturat format över utvalda fält och tabeller. Denna data sparas i ett strukturerat yaml-format som Koha-deploy kan tolka och omvanlda till ett SQL-script sedan exekveras för att importera aktuella inställningar i valfri Koha-instans. Efter det inställningar extraherats kan desssa importeras i valfi Koha-miljö genom att lägga den exporterade datan i en mapp på servern, och sedan köra:
+
+`cap lab koha:sync-managed-data[/path/to/data]`
+
+Det finns utrymme för förbättring av denna funktionalitet, men det fungerar tillräckligt bra för att vara användbart.
+
+### Serverkonfiguration
+
+Vissa rutiner i Koha-Deploy är tänkte att köras då man sätter upp en ny Koha-instans, och tillhandahåller bland annat samma funktionalitet som Koha gitify (https://github.com/ub-digit/extract-koha-config), men med vissa problem som Koha-gitify lider av åtgärdade. Bland annat går det inte att köra Koha-gitfy mer än en gång, medans Koha-deploys server-konfiguration är designad för att vara idempotent, dvs man får samma resultat utifrån samma tillstånd oavsätt hur många gånger aktuell operation körs. Ett par buggar är även åtgärdade som Koha-gitfy i alla fall led av vid tiden då denna funktionalitet i Koha-deploy skrevs. Det bör även vara möjligt att köra Koha-deploy upprepade tillfällen för att hämta in uppdaterad konfiguration med Koha-repot som källa, och samtidigt bevara egna justeringar. Det var dock ett tag sedan vi själva körde dessa rutiner, så det finns en risk koden befinner sig i ett trasigt tillstånd. Det fanns ursprungligen även en ambition att Koha-deploy skulle kunna sätta upp en Koha-instans helt från grunden, inklusive skapande av databas med mera, men då detta skrivs krävs att det finns färdig Koha-instans skapad. Koha-deploy tar däremot hand om att omvandla denna från en system-installerad Koha, till en "gitifierad" Koha, där koden som körs kan komma direkt från en utcheckning i Git. För att gitifiera en system-installerad Koha körs:
+
+`cap lab koha:setup-instance`
+
+### Plugins
+
+Plugins är också en komponent i tillståndet för en Koha-instans och bör därför kunna deployas på ett enkelt sätt. Då plugins oftast versionshanteras i egna git-repos skulle deta vara opraktiskt att inkludera dessa som en del vårt Koha repo. Git submoduler skulle kunna vara ett alterativ, men det dåliga rykte de lider av är inte helt oförtjänt. Vi har försökt att välja enklast tänkbara lösning och resultat är att möjlighet finns att på ett strukturerat sätt ange en lista över plugins i en fil i Koha repot med en bestämd sökväg: "koha_deploy/plugins.yaml". Vår version av denna fil ser förnärvarande ut såhär:
+
+```
+---
+# Koha plugins
+- url: https://github.com/ub-digit/koha-plugin-libris-marc-import
+  branch: master
+- url: https://github.com/ub-digit/koha-plugin-edifact
+  branch: master
+- url: https://github.com/ub-digit/koha-plugin-get-print-data
+  branch: master
+- url: https://github.com/ub-digit/koha-plugin-format-facet
+  branch: master
+```
+
+Formatet är enkelt och består helt enkelt av en listan över poster med två egenskaper, "url", url till git repo för plugin, och "branch", den branch som skall deployas.
+
+Efter det att plugin-funktionalitet aktiverats i Koha kan man skriva följande för att deploya alla plugins via Git till Kohas plugin-katalog:
+
+`cap <stage> koha:plugins-install`
+
+### Bekvämlighetskommandon
+
+#### För att komma direkt in i Koha-shell för aktuell stage
+`cap <stage> koha:shell`
+
+#### För att komma direkt in i Mysql-prompt för aktuell stage
+`cap <stage> koha:mysql`
+
+#### Ta backup av databas
+`cap <stage> koha:stash-database`
+
+#### Ladda ner backup lokalt
+`cap <stage> koha:stash-database:download`
+
+#### Tömma Kohas cache
+`cap <stage> koha:clear-cache`
+
+#### Starta om Apache
+`cap <stage> apache:restart`
