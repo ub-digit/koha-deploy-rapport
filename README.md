@@ -44,7 +44,7 @@ Git är flexiblelt när det gäller vilket arbetsflöde man väljer att använda
 
 Att använda detta arbetsflöde för Koha-utveckling utfrån de ovan ställda kraven är inte lämpligt.
 
-Ett av problemet är att de förändringar som vi arbetar med i egna feature-branches och som med ovanstående arbetsflöde senare mergas in i devel och master också kan komma in Koha upstream master (via ärenden i Bugzilla). Då kan dessuotm ytterligare commits eller till med rebasningar tillkommit. Samma, eller liknande, kodförädrninga kan således komma in kodbasen från två olika håll. Detta leder till återkommande svårlösta mergekonflikter med stor risk för handhavandefel och resulterar också i en väldigt trasslig och svårtolkad git-historik.
+Ett av problemet är att de förändringar som vi arbetar med i egna feature-branches och som med ovanstående arbetsflöde senare mergas in i devel och master också kan komma in Koha upstream master (via ärenden i Bugzilla). Då kan dessutom ytterligare commits eller till med rebasningar tillkommit. Samma, eller liknande, kodförädrninga kan således komma in kodbasen från två olika håll. Detta leder till återkommande svårlösta mergekonflikter med stor risk för handhavandefel och resulterar också i en väldigt trasslig och svårtolkad git-historik.
 
 Våra feature-branches är alltså inte helt under vår kontroll då andra utvecklare kan lägga till commits eller utföra rebasningar mot Koha master. Som konsekvens av detta kan vi inte merga in feature-branches någon annan branch, eftersom den branch mot vilken mergningen sker får ett beroende till en branch för vilken historiken kan skrivas om.
 
