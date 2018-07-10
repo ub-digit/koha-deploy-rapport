@@ -204,4 +204,4 @@ För att deploya körs sedan:
 
 `cap lab deploy`
 
-När kommandot kört klart är aktuell release deployad på lab-servern.
+När kommandot kört klart har aktuell release deployats till lab-servern.
