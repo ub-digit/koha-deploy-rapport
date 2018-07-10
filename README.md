@@ -75,27 +75,36 @@ Följer Koha upstream master, men synkroniseras manuellt, och kommer nästan ald
 
 Flytta fram våran master till den punkt vi vill utgå ifrån för den nya releasen. Vanligtvis innebär detta att flytta fram master till senaste committen i Koha upstream master. I föjlande exempler är "upstream-master" en tracking-branch för Kohas master.
 
-`git checkout upstream-master`
-`git pull`
-`git checkout master`
-`git merge upstream-master`
-`git push`
+```
+git checkout upstream-master
+git pull
+git checkout master
+git merge upstream-master
+git push
+```
 
 ### Rebasa feature-branches mot ny master
 
 För att minimera risken för merge-konflikter i ett senare skede av branch-byggandet (då alla feature-branches rebasas in) rebasas alla feature-branches mot ny master. Detta sker genom att lokalt checka ut aktuella branches, rebasa var och en mot master, och sedan force-pusha upp till vårt Koha-repo:
 
-`git checkout gub-bug-123-fixa-bug-i-koha`
-`git rebase master`
-`git push -f`
+```
+git checkout gub-bug-123-fixa-bug-i-koha
+git rebase master
+git push -f
+```
 
-`git checkout gub-dev-egna-anspassnigar-1`
-`git rebase master`
-`git push -f`
+```
+git checkout gub-dev-egna-anspassnigar-1
+git rebase master
+git push -f`
 
-`git checkout gub-dev-egna-anspassnigar-2`
-`git rebase master`
-`git push -f`
+```
+
+```
+git checkout gub-dev-egna-anspassnigar-2
+git rebase master
+git push -f
+```
 
 I och med att vi har rebasat och force-pushat har vi nu i praktiken en helt ny uppsättning feature-branches i vår remote, men med samma eller liknande ändringar (beroende på om vi fick merge-konflikter eller ej).
 
@@ -103,8 +112,10 @@ I och med att vi har rebasat och force-pushat har vi nu i praktiken en helt ny u
 
 Sedan skapas den branch som senare kommer utgöra startpunkten för vår nya release:
 
-`git checkout master`
-`git checkout -b release-2018.07-20180710.1130`
+```
+git checkout master
+git checkout -b release-2018.07-20180710.1130
+```
 
 Vi följer en namnkonversion för release branches med ett statiskt prefix "release-" följt av år och månad för den commit branchbygget utgått ifrån separerade med punkt (2018.07) följt av datum och tid för branch-bygget.
 
@@ -112,9 +123,11 @@ Vi följer en namnkonversion för release branches med ett statiskt prefix "rele
 
 Ståendes i den nya tomma release branchen rebasas i tur och ordning alla feature branches in:
 
-`git rebase gub-bug-123-fixa-bug-i-koha`
-`git rebase gub-dev-egna-anspassnigar-1`
-`git rebase gub-dev-egna-anspassnigar-2`
+```
+git rebase gub-bug-123-fixa-bug-i-koha
+git rebase gub-dev-egna-anspassnigar-1
+git rebase gub-dev-egna-anspassnigar-2
+```
 
 Här kan konflikter mellan olika branches uppstå och behöva lösas, men har man aktiverat git Rerere behöver en specifik konflikt bara lösas en gång.
 
