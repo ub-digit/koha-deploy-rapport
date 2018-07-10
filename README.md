@@ -17,7 +17,7 @@ Man kan grovt dela in funktionaliteten i följande områden:
 
 # Arbetsflöde i Git
 
-För att förstå hur Koha-deploy automatiserar av arbetsflödet i Git börjar vi med att redogöra för hur själva arbetsflödet är utformat och varför. Man skulle i teorin kunna använda sig av detta arbetsflöde utan Koha-Deploy även om det skulle vara hemskt opraktiskt pga de många repetitiva ingående momenten. Koha-deploy används för att automatisera merparten av dessa. Således ingår Koha-Deploy som en central del i hur vi jobbar med Koha och versionshantering.
+  För att förstå hur Koha-deploy automatiserar av arbetsflödet i Git börjar vi med att redogöra för hur själva arbetsflödet är utformat och varför. Man skulle i teorin kunna använda sig av detta arbetsflöde utan Koha-Deploy även om det skulle vara opraktiskt pga de många repetitiva momenten. Koha-deploy används för att automatisera merparten av dessa. Således ingår Koha-Deploy som en central del i hur vi jobbar med Koha och versionshantering.
 
 När vi bestämnde oss för en modell för versionhantering fanns ett antal förutsättningar, vissa under vår kontroll och den del satta av Koha-gemenskapen.
 
