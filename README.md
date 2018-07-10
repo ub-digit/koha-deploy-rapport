@@ -198,7 +198,7 @@ Denna rutin automatiserar de manuella stegen ovan, och kommer automatiskt använ
 
 `set :branch, 'release-2018.05-20180531.1119'`
 
-Inställningen "branch" är namnet på den branch som deployas av Capistrano/Kona-deploy. Den kod som deployas på servern är alltså tillståndet för nuvarande HEADför denna branch.
+Inställningen "branch" är namnet på den branch som deployas av Capistrano/Kona-deploy. Den kod som deployas på servern är alltså tillståndet för nuvarande HEAD i denna branch.
 
 För att deploya körs sedan:
 
