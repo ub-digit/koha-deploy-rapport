@@ -1,4 +1,4 @@
-Koha Deploy
+# Koha Deploy
 
 För deploy använder vi Capistrano, ett verktyg skrivet i Ruby som kan användas för att automatisera körning av uppgifter/rutiner i olika servermiljöer (tex. staging, production, lab osv).
 
@@ -15,7 +15,7 @@ Man kan grovt dela in funktionaliteten i följande områden:
 - Hantering av Koha-inställningar (som ligger i databas)
 - Serverkonfiguration
 
-# Git arbetsflöde
+# Arbetsflöde i Git
 
 För att förstå hur Koha-deploy automatiserar av arbetsflödet i Git börjar vi med att redogöra för hur själva arbetsflödet är utformat och varför. Man skulle i teorin kunna använda sig av detta arbetsflöde utan Koha-Deploy även om det skulle vara hemskt opraktiskt pga de många repetitiva ingående momenten. Koha-deploy används för att automatisera merparten av dessa. Således ingår Koha-Deploy som en central del i hur vi jobbar med Koha och versionshantering.
 
@@ -61,17 +61,17 @@ Vi har följande branches:
 - gub-dev-egna-anspassnigar-1
 - gub-dev-egna-anpassningar-2
 
-# master
+## master
 
 Följer Koha upstream master, men synkroniseras manuellt, och kommer nästan aldrig innehålla de absolut senaste ändringarna. Kohas upstream master mergas in i denna med jämna mellanrum, i regel i samband med förberedelser inför ny release.
 
-# Feature-branches
+## Feature-branches
 
 "gub-bug-123-fixa-bug-i-koha" har ett motsvarande ärende i Bugzilla (bugnummer 123), "gub-dev-egna-anspassnigar-1" och "gub-dev-egna-anspassnigar-2" innehåller interna anpassingar och finns ej i Bugzilla.
 
-# För att skapa ny release:
+## Skapa ny release (manuellt)
 
-## Flytta fram master
+### Flytta fram master
 
 Flytta fram våran master till den punkt vi vill utgå ifrån för den nya releasen. Vanligtvis innebär detta att flytta fram master till senaste committen i Koha upstream master. I föjlande exempler är "upstream-master" en tracking-branch för Kohas master.
 
@@ -81,7 +81,7 @@ Flytta fram våran master till den punkt vi vill utgå ifrån för den nya relea
 `git merge upstream-master`
 `git push`
 
-## Rebase feature-branches mot ny master
+### Rebasa feature-branches mot ny master
 
 För att minimera risken för merge-konflikter i ett senare skede av branch-byggandet (då alla feature-branches rebasas in) rebasas alla feature-branches mot ny master. Detta sker genom att lokalt checka ut aktuella branches, rebasa var och en mot master, och sedan force-pusha upp till vårt Koha-repo:
 
@@ -99,7 +99,7 @@ För att minimera risken för merge-konflikter i ett senare skede av branch-bygg
 
 I och med att vi har rebasat och force-pushat har vi nu i praktiken en helt ny uppsättning feature-branches i vår remote, men med samma eller liknande ändringar (beroende på om vi fick merge-konflikter eller ej).
 
-## Skapa ny "tom" release-branch
+### Skapa ny "tom" release-branch
 
 Sedan skapas den branch som senare kommer utgöra startpunkten för vår nya release:
 
@@ -108,7 +108,7 @@ Sedan skapas den branch som senare kommer utgöra startpunkten för vår nya rel
 
 Vi följer en namnkonversion för release branches med ett statiskt prefix "release-" följt av år och månad för den commit branchbygget utgått ifrån separerade med punkt (2018.07) följt av datum och tid för branch-bygget.
 
-## Rebasa in alla feature branches
+### Rebasa in alla feature branches
 
 Ståendes i den nya tomma release branchen rebasas i tur och ordning alla feature branches in:
 
@@ -118,33 +118,33 @@ Ståendes i den nya tomma release branchen rebasas i tur och ordning alla featur
 
 Här kan konflikter mellan olika branches uppstå och behöva lösas, men har man aktiverat git Rerere behöver en specifik konflikt bara lösas en gång.
 
-## Pusha release-branch
+### Pusha release-branch
 
 Vi har nu en release-branch-kandidat som är redo att testas och utvärderas. Men innan detta sker måste den pushas till vårt Koha-repo:
 
 `git push --set-upstream origin release-2018.07-20180710.1130`
 
-## Deploy
+### Deploy
 
 Se sista steget under "Release-bygge med Koha-deploy".
 
-# Release-bygge med Koha-deploy
+## Skapa ny release (med Koha-deploy)
 
 I Koha-deploy så är det mesta i ovanstående arbetsflöde automatiserat. Följande krävs för att utföra motsvarande mot lab-miljön:
 
-# Konfiguration av Koha-deploy
+### Konfiguration av Koha-deploy
 
 "config/deploy.rb" innehåller generell konfiguration för alla stages (servrar/miljöer mot vilka Koha deployas).
 
 De viktigaste inställningarna är:
 
-## Repot som Koha-deploy använder vid deploy
+### Repot som Koha-deploy använder vid deploy
 `set :repo_url, 'https://github.com/ub-digit/Koha.git'`
 
-## Den punkt som Koha-deploy utgår ifrån vid bygget av ny release-branch
+### Den punkt som Koha-deploy utgår ifrån vid bygget av ny release-branch
 `set :koha_deploy_release_branch_start_point, 'master'`
 
-## De feature-branches som skall integreras (rebasas in) vid bygge av ny release-branch:
+### De feature-branches som skall integreras (rebasas in) vid bygge av ny release-branch:
 ```
 set :koha_deploy_rebase_branches, [
   'gub-bug-14957-marc-permissions',
@@ -158,11 +158,11 @@ set :koha_deploy_rebase_branches, [
 
 Koha deploy klonar automatiskt repot som angivits via "repo_url" lokalt i katalogen "./repo" och där sker sedan det lokala branch-byggandet sker. Det är också i detta repo lösning av eventuellt konflikter utförs, samt alla rutiner i Koha-deploys "build" och "branches" namespaces opererar mot.
 
-## Flytta fram master
+### Flytta fram master
 
 Det första steget "Flytta fram master" sker manuellt även och är identiskt med ovanstånde steg. Detta då det är en operation som utförs relativt sällan och är ej meningsfullt att automatisera.
 
-## Rebasa feature-branches mot ny master
+### Rebasa feature-branches mot ny master
 
 För att rebasa alla feature-branches mot ny master:
 
@@ -170,7 +170,7 @@ För att rebasa alla feature-branches mot ny master:
 
 Vid mergekonflikt kommer Koha-Deploy att krasha, och konflikten måste lösas manuellt. Man upprepar sedan kommandot och löser eventulla konflikter tills dess att alla braches är rebasade.
 
-## Bygg ny release branch
+### Bygg ny release branch
 
 `cap lab koha:build`
 
@@ -179,7 +179,7 @@ Denna rutin automatiserar de manuella stegen ovan, och kommer automatiskt använ
 `cd repo`
 `git push --set-upstream origin release-2018.07-20180710.1130`
 
-## Deploy av release-branch
+### Deploy av release-branch
 
 Ändra inställning i "config/deploy.rb"
 
