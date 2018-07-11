@@ -178,7 +178,7 @@ Det första steget "Flytta fram master" sker manuellt även och är identiskt me
 
 ### Rebasa feature-branches mot ny master
 
-För att rebasa alla feature-branches mot ny master:
+För att rebasa alla feature-branches mot ny master med inställningar för "lab":
 
 `cap lab koha:branches:rebase`
 
@@ -281,11 +281,11 @@ Det finns utrymme för förbättring av denna funktionalitet, men det fungerar t
 
 Vissa rutiner i Koha-Deploy är tänkte att köras då man sätter upp en ny Koha-instans, och tillhandahåller bland annat samma funktionalitet som Koha-gitify (https://github.com/mkfifo/koha-gitify), men med vissa problem som Koha-gitify lider av åtgärdade. Bland annat går det inte att köra Koha-gitfy mer än en gång, medans Koha-deploys server-konfiguration är designad för att vara idempotent, dvs man får samma resultat utifrån samma tillstånd även om operationen upprepas flera gånger. Ett par buggar är även åtgärdade som Koha-gitfy i alla fall led av vid tiden då denna funktionalitet i Koha-deploy skrevs. Det bör även vara möjligt att köra Koha-deploy upprepade tillfällen för att hämta in uppdaterad konfiguration med Koha-repot som källa, och samtidigt bevara egna ändringar. Det var dock ett tag sedan vi själva körde dessa rutiner, så det finns en risk koden befinner sig i ett trasigt tillstånd. Det fanns ursprungligen även en ambition att Koha-deploy skulle kunna sätta upp en Koha-instans helt från grunden, inklusive skapande av databas med mera, men då detta skrivs krävs att det finns färdig Koha-instans skapad. Koha-deploy tar däremot hand om att omvandla denna från en system-installerad Koha, till en "gitifierad" Koha, där koden som körs kan komma direkt från en utcheckning i Git. För att gitifiera en system-installerad Koha körs:
 
-`cap lab koha:setup-instance`
+`cap <stage> koha:setup-instance`
 
 Ett problem med att utgå från en systeminstallerad Koha är också att script som direkt från kommandoraden så som "koha-shell", "koha-mysql", "koha-plack" kommer från den system-installerade releasen. Man kan inte vara säker på att dessa är kompatibla med den Gitifierade Koha-instansen. Vill man instället använda de script som ligger i repot (under ./debian/scripts) körs följande:
 
-`cap lab koha:adjust-package-installation-scripts`
+`cap <stage> koha:adjust-package-installation-scripts`
 
 som lägger till en första rad i varje packet-installerat script som kollar om det finns ett motsvarande script i katalogen Koha deployats till och i så fall använder detta istället.
 
